@@ -1,7 +1,7 @@
 #!/bin/bash
 
 wget -O games.pgn.zst $1
-unzst -o games.pgn games.pgn.zst
+unzstd -o games.pgn games.pgn.zst
 rm games.pgn.zst
 
 source env/bin/activate
