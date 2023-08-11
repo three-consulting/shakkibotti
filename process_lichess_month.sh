@@ -8,3 +8,4 @@ source env/bin/activate
 python preprocess.py preprocess --files games.pgn --outDir $2
 python preprocess.py tokenize --outDir $2
 rm $2/moves_*
+rm games.pgn
