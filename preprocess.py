@@ -75,7 +75,6 @@ def tokenize(move_dir):
     with open(f'{move_dir}/meta.pkl', 'wb') as f:
         pickle.dump(meta, f)
 
-
     with open(f"{move_dir}/moves_train.txt", "r") as f:
         for line in f:
             train_file = np.memmap(f'{move_dir}/train.bin', dtype=np.uint16, mode='r+', shape=(total_tokens_train,))
@@ -99,10 +98,69 @@ def tokenize(move_dir):
             row_index += 1
             del validate_file
 
+def merge_token_files(dirs: list):
+    unique_moves = set()
+    total_tokens_train = 0
+    total_tokens_validate = 0
+
+    for dir in dirs:
+        with open(f"{dir}/meta.pkl", "rb") as meta:
+            meta_content = pickle.load(meta)
+            [unique_moves.add(value) for value in meta_content["itos"].values()]
+        train_file = np.memmap(f'{dir}/train.bin', dtype=np.uint16, mode='r+')
+        total_tokens_train += train_file.size+1
+        val_file = np.memmap(f'{dir}/val.bin', dtype=np.uint16, mode='r+')
+        total_tokens_validate += val_file.size + 1
+
+    vocab_size = len(unique_moves)
+    stoi = { ch:i for i,ch in enumerate(unique_moves) }
+    itos = { i:ch for i,ch in enumerate(unique_moves) } 
+    meta = {
+        'vocab_size': vocab_size,
+        'itos': itos,
+        'stoi': stoi,
+    }
+    with open('meta.pkl', 'wb') as file:
+        pickle.dump(meta, file)
+    
+    def encode(moves):
+        return [stoi[move] for move in moves] # encoder: take a string, output a list of integers
+    
+    new_train_file = np.memmap('train.bin', dtype=np.uint16, mode='w+', shape=(total_tokens_train,))
+    new_validate_file = np.memmap('val.bin', dtype=np.uint16, mode='w+', shape=(total_tokens_validate,))
+    list_index = 0
+
+    for dir in dirs:
+        with open(f"{dir}/meta.pkl", "rb") as meta_file:
+            meta_text= pickle.load(meta_file)
+            old_train_data =  np.memmap(f'{dir}/train.bin', dtype=np.uint16, mode='r+')
+            for move in old_train_data:
+                pass
+            new_list = [meta_text["itos"][move] for move in old_train_data]
+            print(new_list)
+            print(len(new_list))
+            for token in encode(new_list + ["\n"]):
+                new_train_file[list_index]=token
+                list_index += 1
+
+    list_index = 0
+
+    for dir in dirs:
+        with open(f"{dir}/meta.pkl", "rb") as meta_file:
+            meta_text= pickle.load(meta_file)
+            old_val_data =  np.memmap(f'{dir}/val.bin', dtype=np.uint16, mode='r+')
+            new_list = [meta_text["itos"][move] for move in old_val_data]
+            print(new_list)
+            print(len(new_list))
+            for token in encode(new_list + ["\n"]):
+                new_validate_file[list_index]=token
+                list_index += 1
+
 
 parser.add_argument("function")
 parser.add_argument("--files", nargs='+')
 parser.add_argument("--outDir")
+parser.add_argument("--dirs", nargs='+')
 args = parser.parse_args()
 
 if args.function == "tokenize":
@@ -110,5 +168,7 @@ if args.function == "tokenize":
 elif args.function == "preprocess":
     os.makedirs(args.outDir, exist_ok=True)
     preprocess(args.files, args.outDir)
+elif args.function == "merge":
+    merge_token_files(args.dirs)
 else:
     raise BaseException("Invalid function")
