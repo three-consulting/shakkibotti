@@ -135,13 +135,14 @@ def merge_token_files(dirs: list):
             meta_text= pickle.load(meta_file)
             old_train_data =  np.memmap(f'{dir}/train.bin', dtype=np.uint16, mode='r+')
             for move in old_train_data:
-                pass
-            new_list = [meta_text["itos"][move] for move in old_train_data]
-            print(new_list)
-            print(len(new_list))
-            for token in encode(new_list + ["\n"]):
-                new_train_file[list_index]=token
+                move_token = meta_text["itos"][move]
+                movetoken = stoi[move_token]
+                new_train_file[list_index] = movetoken
                 list_index += 1
+                if list_index % 10000 == 0:
+                    del new_train_file
+                    new_train_file = np.memmap('train.bin', dtype=np.uint16, mode='r+', shape=(total_tokens_train,))
+            new_train_file[list_index] = stoi["\n"]
 
     list_index = 0
 
@@ -149,12 +150,18 @@ def merge_token_files(dirs: list):
         with open(f"{dir}/meta.pkl", "rb") as meta_file:
             meta_text= pickle.load(meta_file)
             old_val_data =  np.memmap(f'{dir}/val.bin', dtype=np.uint16, mode='r+')
-            new_list = [meta_text["itos"][move] for move in old_val_data]
-            print(new_list)
-            print(len(new_list))
-            for token in encode(new_list + ["\n"]):
-                new_validate_file[list_index]=token
+            for move in old_val_data:
+                move_token = meta_text["itos"][move]
+                movetoken = stoi[move_token]
+                new_validate_file[list_index] = movetoken
                 list_index += 1
+                if list_index % 10000 == 0:
+                    del new_validate_file
+                    new_validate_file = np.memmap('val.bin', dtype=np.uint16, mode='r+', shape=(total_tokens_validate,))
+            new_validate_file[list_index] = stoi["\n"]
+
+    del new_train_file
+    del new_validate_file
 
 
 parser.add_argument("function")
