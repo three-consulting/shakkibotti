@@ -13,7 +13,8 @@ def preprocess(all_games: list, move_dir:str):
     def process_row(row):
         if len(row) == 0 or row[0] != "1":
             return []
-        return [re.sub(r"[\+#]", "", word) for word in row.split(" ") if len(re.findall(r"[^0-9abcdefghxBKNPQRO\-\+#]", word)) ==0][:-1]
+        return [re.sub(r"[\+#]", "", word) for word in row.split(" ") if len(re.findall(r"[^0-9abcdefghxBKNPQRO\-\+#\=]", word)) ==0][:-1]
+        # Onko ok vain lisätä "\=" loppuun?
 
     for filename in all_games:
         with open(filename, 'r') as fh:
